@@ -1,0 +1,32 @@
+MOUNT_POINT="/mnt/TEST"
+
+mount_callback()
+{
+    declare mount_point
+    mount_point="${1}"
+
+    declare mount_option
+    mount_option="${2}"
+
+    declare helper
+    helper=${3}
+    
+    mount \
+        --bind \
+        $( if [[ ! -z "${helper}" ]]; then echo "-o helper=${helper}"; fi ) \
+        -o "${mount_option}" \
+            "/var/local/lib/sensitive-storage" "${mount_point}"
+}
+
+unmount_callback()
+{
+    declare mount_point
+    mount_point="${1}"
+
+    declare internal_only
+    internal_only=${2}
+
+    umount \
+        $( if ${internal_only}; then echo "--internal-only"; fi ) \
+            "${mount_point}"
+}

@@ -1,0 +1,52 @@
+declare STORAGE_ZPOOL
+STORAGE_ZPOOL="storage"
+export STORAGE_ZPOOL
+
+declare VAULT_DATASET
+VAULT_DATASET="vault"
+export VAULT_DATASET
+
+declare MOUNT_POINT
+MOUNT_POINT="/mnt/VAULT"
+export MOUNT_POINT
+
+
+mount_callback()
+{
+    declare mount_point
+    mount_point="${1}"
+
+    declare mount_option
+    mount_option="${2}"
+
+    declare helper
+    helper=${3}
+
+    zpool import -f "${STORAGE_ZPOOL}" || true
+    zfs load-key -L "file:///home/adrien/Life/Others/Credentials/vault.key" "${STORAGE_ZPOOL}/${VAULT_DATASET}" || true
+    zfs set mountpoint="/mnt/.VAULT" "${STORAGE_ZPOOL}/${VAULT_DATASET}"
+    zfs mount "${STORAGE_ZPOOL}/${VAULT_DATASET}"
+    mount \
+        --bind \
+        -o "${mount_option}" \
+        $( if [[ ! -z "${helper}" ]]; then echo "-o helper=${helper}"; fi ) \
+            "/mnt/.VAULT" "${mount_point}"
+
+}
+
+unmount_callback()
+{
+    declare mount_point
+    mount_point="${1}"
+
+    declare internal_only
+    internal_only=${2}
+
+    umount \
+        $( if ${internal_only}; then echo "--internal-only"; fi ) \
+            "${mount_point}"
+
+    zfs unmount "${STORAGE_ZPOOL}/${VAULT_DATASET}"
+    zfs unload-key "${STORAGE_ZPOOL}/${VAULT_DATASET}"
+    zpool export "${STORAGE_ZPOOL}"
+}
