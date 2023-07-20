@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+
+list_medium_names()
+{
+    find "$( config_folder_path )" \
+        -name "*.medium" -exec basename "{}" ".medium" \;
+}
+
+
+mount_medium()
+{
+    declare medium_name
+    medium_name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    declare key_file_path
+    key_file_path="${3}"
+
+    declare mount_helper_name
+    mount_helper_name="${4}"
+
+
+    declare intermediary_mount_point
+    intermediary_mount_point="$( intermediary_mount_point "${medium_name}" )"
+
+    mkdir -p "${intermediary_mount_point}" "${mount_point}"
+    
+    setup_medium "${medium_name}" "${intermediary_mount_point}" "${key_file_path}"
+
+    mount \
+        --bind \
+        -o "x-encrypted-storage-medium-name=${medium_name}$( if [[ ! -z "${mount_helper_name}" ]]; then echo ",helper=${mount_helper_name}"; fi )" \
+            "${intermediary_mount_point}" "${mount_point}"
+}
+
+
+unmount_medium()
+{
+    declare medium_name
+    medium_name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    declare intermediary_mount_point
+    intermediary_mount_point="$( intermediary_mount_point "${medium_name}" )"
+
+    umount \
+        --internal-only \
+            "${mount_point}"
+
+    teardown_medium "${medium_name}" "${intermediary_mount_point}"
+
+    rmdir "${intermediary_mount_point}"
+}
+
+
+intermediary_mount_point()
+{
+    declare medium_name
+    medium_name="${1}"
+    
+    echo "$( runtime_folder_path )/mount_points/${medium_name}"
+}
+
+
+config_folder_path()
+{
+    echo "${ENCRYPTED_STORAGE_CONFIG_FOLDER_PATH:-"/etc/encrypted-storage"}"
+}
+
+
+runtime_folder_path()
+{
+    echo "${ENCRYPTED_STORAGE_RUNTIME_FOLDER_PATH:-"/run/encrypted-storage"}"
+}
+
+
+setup_medium()
+{
+    declare name
+    name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    declare key_file_path
+    key_file_path="${3}"
+
+    (
+        source "$( config_folder_path )/${name}.medium"
+        NAME="${name}" MOUNT_POINT="${mount_point}" KEY_FILE_PATH="${key_file_path}" setup
+    )
+}
+
+teardown_medium()
+{
+    declare name
+    name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    (
+        source "$( config_folder_path )/${name}.medium"
+        NAME="${name}" MOUNT_POINT="${mount_point}" teardown
+    )
+}

@@ -29,13 +29,13 @@ log()
     shift 1
 
     declare context
-    context="${LOG_CONTEXT:-"none"}"
+    context="${ENCRYPTED_STORAGE_LOG_CONTEXT:-"${SCRIPT_NAME}"}"
 
     declare file_path
-    file_path="${LOG_FILE_PATH:-"/dev/null"}"
+    file_path="${ENCRYPTED_STORAGE_LOG_FILE_PATH:-"/dev/null"}"
 
     declare quiet
-    quiet=${LOG_QUIET:-false}
+    quiet=${ENCRYPTED_STORAGE_LOG_QUIET:-false}
 
     tee -a "${file_path}" \
         <<<"${context}/${level} ${*}" \

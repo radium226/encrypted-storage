@@ -6,15 +6,12 @@ declare SCRIPT_FILE_PATH
 SCRIPT_FILE_PATH="${0}"
 export SCRIPT_FILE_PATH
 
-declare APPLICATION_NAME
-APPLICATION_NAME="$( basename "$( dirname "$( realpath "${0}" )" )" )"
-
 declare LOG_CONTEXT
 LOG_CONTEXT="$( basename "${0}" )"
 
 declare file_name
 for file_name in "logging" "exit-codes" "media"; do
-    source "$( dirname "$( realpath "${0}" )" )/../lib/${file_name}"
+    source "%{INSTALL_FOLDER}/lib/encrypted-storage/functions/${file_name}"
 done
 
 
