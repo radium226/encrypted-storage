@@ -3,8 +3,14 @@
 set -euEo pipefail
 
 
-declare LOG_CONTEXT
-LOG_CONTEXT="$( basename "${0}" )"
+declare SCRIPT_FILE_PATH
+SCRIPT_FILE_PATH="${0}"
+export SCRIPT_FILE_PATH
+
+declare SCRIPT_FILE_NAME
+SCRIPT_FILE_NAME="$( basename "${0}" )"
+export SCRIPT_FILE_NAME
+
 
 declare file_name
 for file_name in "logging" "exit-codes" "media"; do

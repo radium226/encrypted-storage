@@ -29,7 +29,7 @@ log()
     shift 1
 
     declare context
-    context="${ENCRYPTED_STORAGE_LOG_CONTEXT:-"${SCRIPT_NAME}"}"
+    context="${ENCRYPTED_STORAGE_LOG_CONTEXT:-"${SCRIPT_FILE_NAME}"}"
 
     declare file_path
     file_path="${ENCRYPTED_STORAGE_LOG_FILE_PATH:-"/dev/null"}"
@@ -39,11 +39,5 @@ log()
 
     tee -a "${file_path}" \
         <<<"${context}/${level} ${*}" \
-        >"$( 
-            if ${quiet}; then 
-                echo "/dev/null"
-            else
-                echo "/dev/stderr"
-            fi 
-        )"
+        >&2
 }

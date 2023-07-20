@@ -6,7 +6,7 @@ SHELL := bash
 
 SRCDIR := ./src
 BUILDDIR := ./build
-DESTDIR := /usr
+DESTDIR := /usr/local
 
 
 SOURCE_FOLDER := $(SRCDIR)
@@ -75,6 +75,12 @@ uninstall:
 	rm "$(INSTALL_FOLDER)/bin/mount.encrypted-storage"
 	rm "$(INSTALL_FOLDER)/bin/encrypted-storage"
 	rm -Rf "$(INSTALL_FOLDER)/lib/encrypted-storage"
+
+
+.PHONY: enable
+enable:
+	systemctl daemon-reload
+	systemctl enable "encrypted-storage.target"
 
 
 .PHONY: clean

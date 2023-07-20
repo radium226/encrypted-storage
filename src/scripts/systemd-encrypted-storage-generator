@@ -3,6 +3,15 @@
 set -euEo pipefail
 
 
+declare SCRIPT_FILE_PATH
+SCRIPT_FILE_PATH="${0}"
+export SCRIPT_FILE_PATH
+
+declare SCRIPT_FILE_NAME
+SCRIPT_FILE_NAME="$( basename "${0}" )"
+export SCRIPT_FILE_NAME
+
+
 main()
 {
     declare normal_folder_path
