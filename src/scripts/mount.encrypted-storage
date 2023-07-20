@@ -21,10 +21,6 @@ trap 'echo "Something went wrong! Quitting... " >&2' ERR
 
 main()
 {
-    
-    echo "${PATH}" >&2
-
-
     declare -a arguments
     arguments=()
 
@@ -96,7 +92,8 @@ main()
     declare mount_point
     mount_point="${arguments[1]}"
 
-    encrypted-storage mount-medium --name="${medium_name}" --mount-helper="encrypted-storage" "${mount_point}"
+    # We reset the INVOCATION_ID in order to force the systemd-run inside... 
+    INVOCATION_ID= encrypted-storage mount-medium --name="${medium_name}" --mount-helper="encrypted-storage" "${mount_point}"
 }
 
 main "${@}"
