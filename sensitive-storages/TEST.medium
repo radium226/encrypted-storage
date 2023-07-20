@@ -2,6 +2,10 @@ MOUNT_POINT="/mnt/TEST"
 
 mount_callback()
 {
+
+    # https://github.com/systemd/systemd/issues/23535
+    set | grep SYSTEMD
+
     declare mount_point
     mount_point="${1}"
 
