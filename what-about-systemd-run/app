@@ -10,6 +10,9 @@ export SCRIPT_FILE_PATH
 
 main()
 {
+    declare key_file_path
+    key_file_path="${1}"
+
     if [[ -z "${INVOCATION_ID:-""}" ]]; then
         systemd-run \
             --quiet \
@@ -17,11 +20,12 @@ main()
             --same-dir \
             --pty \
             --collect \
-            --property="LoadCredentialEncrypted=key.txt:$( pwd )/key.txt" \
+            --pipe \
+            --property="LoadCredentialEncrypted=key:$( realpath "${key_file_path}" )" \
                 -- \
-                    "${SCRIPT_FILE_PATH}" "${@}"
+                    "${SCRIPT_FILE_PATH}" '${CREDENTIALS_DIRECTORY}/key'
     else
-        cat ${CREDENTIALS_DIRECTORY}/key.txt
+        echo "key_file_path=${key_file_path}" >&2
     fi
 }
 
