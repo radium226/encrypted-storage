@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+
+set -euEo pipefail
+
+declare APPLICATION_NAME
+APPLICATION_NAME="$( basename "$( dirname "$( realpath "${0}" )" )" )"
+
+declare LOG_CONTEXT
+LOG_CONTEXT="$( basename "${0}" )"
+
+declare file_name
+for file_name in "logging"; do
+    source "$( dirname "$( realpath "${0}" )" )/../lib/${file_name}"
+done
+
+
+trap 'echo "Something went wrong! Quitting... " >&2' ERR
+
+main()
+{
+    declare -a arguments
+    arguments=()
+
+    # -r
+    declare read_only
+    read_only=false
+
+    # -f
+    declare force
+    force=false
+
+    # -n
+    declare mtab
+    mtab=true
+
+    # -v
+    declare verbose
+    verbose=true
+
+    # -l
+    declare lazy
+    lazy=true
+
+    # -t
+    declare sub_type
+    sub_type=""
+
+    # spec dir [-sfnv] [-o options] [-t type.subtype] 
+    while true; do
+        case "${1:-}" in
+            -r )
+                    read_only=true
+                    shift 1
+                ;;
+
+            -f )
+                    force=true
+                    shift 1
+                ;;
+
+            -n )
+                    mtab=true
+                    shift 1
+                ;;
+
+            -l )
+                    lazy=true
+                    shift 1
+                ;;
+
+            -v )
+                    verbose=true
+                    shift 1
+                ;;
+
+            -t )
+                    sub_type="${2}"
+                    shift 2
+                ;;
+
+            '' )
+                    break
+                ;;
+
+            * )
+                    arguments+=("${1}")
+                    shift 1
+                ;;
+        esac
+    done
+
+    declare medium_name_or_mount_point
+    medium_name_or_mount_point="${arguments[0]}"
+
+    declare mount_point
+    declare medium_name
+    if mountpoint -q "${medium_name_or_mount_point}"; then
+        mount_point="${medium_name_or_mount_point}"
+        medium_name=$( 
+            mount -v | \
+            jc --mount | \
+            jq \
+                -r \
+                --arg mount_point "${mount_point}" \
+                    '.[] | select(.mount_point | contains($mount_point)) | .options[] | select(. | contains("x-encrypted-storage-medium-name="))' | \
+            awk -F "=" '{ print($2) }'
+        )
+    else
+        medium_name="${medium_name_or_mount_point}"
+        mount_point=$( 
+            mount -v | \
+            jc --mount | \
+            jq \
+                -r \
+                --arg medium_name "${medium_name}" \
+                    '.[] | select(.options[] | contains("x-encrypted-storage-medium-name=" + $medium_name)) | .mount_point'
+        )
+    fi
+
+    encrypted-storage unmount-medium --name="${medium_name}" "${mount_point}"
+}
+
+main "${@}"

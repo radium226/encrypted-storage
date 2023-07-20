@@ -4,108 +4,54 @@ SHELL := bash
 .ONESHELL:
 
 
-.PHONY: reinstall
-reinstall:
-	make --no-print-directory uninstall install
+.PHONY: test
+test:
+	@
+
+	trap "echo Failed! >&2" ERR
+
+	declare CONFIG_FOLDER_PATH
+	CONFIG_FOLDER_PATH="./etc"
+	export CONFIG_FOLDER_PATH
+
+	declare RUNTIME_FOLDER_PATH
+	RUNTIME_FOLDER_PATH="./test/run"
+	export RUNTIME_FOLDER_PATH
+
+	echo " ==> Listing media... " >&2
+	./bin/encrypted-storage list-media
+	echo " --> Done! " >&2
+	echo >&2
+
+	echo " ==> Mounting TEST medium... " >&2
+	./bin/encrypted-storage mount-medium "./test/mnt/TEST"
+	test -f "./test/mnt/TEST/secrets.txt" && cat "./test/mnt/TEST/secrets.txt"
+	echo " --> Done !" >&2
+	echo >&2
+
+	echo " ==> Unmounting TEST medium... " >&2
+	./bin/encrypted-storage unmount-medium "./test/mnt/TEST"
+	! test -f "./test/mnt/TEST/secrets.txt"
+	echo " --> Done !" >&2
+	echo >&2
+
+	ln -s \
+		"$(shell pwd)/bin/mount.encrypted-storage" "$(shell pwd)/bin/umount.encrypted-storage" "$(shell pwd)/bin/encrypted-storage" \
+		"/usr/local/bin" || true
+
+	echo " ==> Mounting TEST medium using mount" >&2
+	mount -v -t encrypted-storage TEST "./test/mnt/TEST"
+	test -f "./test/mnt/TEST/secrets.txt" && cat "./test/mnt/TEST/secrets.txt"
+	mount -v | grep "TEST"
+	echo " --> Done !" >&2
+	echo >&2
 
 
-.PHONY: install
-install:
-	@ echo "Install: " >&2
-	trap 'echo KO >&2' ERR
+	echo " ==> Unmounting TEST medium using umount" >&2
+	umount -v "./test/mnt/TEST"
+	! test -f "./test/mnt/TEST/secrets.txt"
+	echo " --> Done !" >&2
+	echo >&2
 
-	@ echo -en " - Creating state folder... " >&2
-	install \
-		-D \
-		-d \
-		-g "root" -o "root" -m "u=rwx,g=rx,o=x" \
-			"/var/local/lib/sensitive-storage"
-	@ echo "OK" >&2
-
-	@ echo -en " - Copying mount helper scripts... " >&2
-	install \
-		-D \
-		-g "root" -o "root" -m "u=rwx,g=rx,o=x" \
-		-t "/usr/local/bin" \
-			"mount.sensitive-storage" "umount.sensitive-storage"
-	@ echo "OK" >&2
-
-	@ echo -en " - Copying main script... " >&2
-	install \
-		-D \
-		-g "root" -o "root" -m "u=rwx,g=rx,o=x" \
-		-t "/usr/local/bin" \
-			"sensitive-storage"
-	@ echo "OK" >&2
-
-	@ echo -en " - Copying config files... " >&2
-	install \
-		-D \
-		-g "root" -o "root" -m "u=rwx,g=rx,o=x" \
-		-t "/etc/sensitive-storages" \
-			$(shell find "./sensitive-storages" -name "*.medium" )
-	@ echo "OK" >&2
-
-	@ echo -en " - Copying systemd generator... " >&2
-	install \
-		-D \
-		-g "root" -o "root" -m "u=rwx,g=rx,o=x" \
-		-t "/usr/local/lib/systemd/system-generators" \
-			"./systemd-sensitive-storage-generator"
-	@ echo "OK" >&2
-
-	@ echo -en " - Copying systemd units... " >&2
-	install \
-		-D \
-		-g "root" -o "root" -m "u=rw,g=r,o=" \
-		-t "/usr/local/lib/systemd/system" \
-			"sensitive-storage.target"
-	@ echo "OK" >&2
-
-	@ echo -en " - Reloading systemd daemon... " >&2
-	systemctl daemon-reload
-	@ echo "OK" >&2
-
-	@ echo -en " - Enabling systemd units... " >&2
-	systemctl enable "sensitive-storage.target" --now --quiet
-	@ echo "OK" >&2
-
-
-.PHONY: uninstall
-uninstall:
-	@ echo "Uninstall: " >&2
-	trap 'echo KO >&2' ERR
+	rm "/usr/local/bin/mount.encrypted-storage" "/usr/local/bin/umount.encrypted-storage" "/usr/local/bin/encrypted-storage" || true
 	
-	@ echo -en " - Disabling systemd units... " >&2
-	systemctl disable "sensitive-storage.target" --now --quiet
-	@ echo "OK" >&2
-	
-	@ echo -en " - Deleting systemd units... " >&2
-	rm "/usr/local/lib/systemd/system/sensitive-storage.target"
-	@ echo "OK" >&2
-
-	@ echo -en " - Deleting systemd generator... " >&2
-	rm "/usr/local/lib/systemd/system-generators/systemd-sensitive-storage-generator"
-	@ echo "OK" >&2
-	
-	@ echo -en " - Deleting mount helper scripts... " >&2
-	rm "/usr/local/bin/mount.sensitive-storage" "/usr/local/bin/umount.sensitive-storage"
-	@ echo "OK" >&2
-
-	@ echo -en " - Deleting mount main script... " >&2
-	rm "/usr/local/bin/sensitive-storage"
-	@ echo "OK" >&2
-	
-	@ echo -en " - Reloading systemd daemon... " >&2
-	systemctl daemon-reload
-	@ echo "OK" >&2
-
-
-.PHONY: follow-logs
-follow-logs:
-	tail -f "/var/log/sensitive-storage.log"
-
-
-.PHONY: list-files
-list-files:
-	ls -alrth "/mnt/TEST"

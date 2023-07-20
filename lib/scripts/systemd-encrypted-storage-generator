@@ -1,0 +1,53 @@
+#!/bin/bash 
+
+set -euEo pipefail
+
+
+main()
+{
+    declare normal_folder_path
+    normal_folder_path="${1}"
+
+    mkdir -p "${normal_folder_path}/encrypted-storage.target.wants"
+
+    declare medium_name
+    for medium_name in $( encrypted-storage list-media ); do
+
+        declare mount_point
+        mount_point="/mnt/${medium_name}"
+
+        declare automount_unit_file_path
+        automount_unit_file_path="${normal_folder_path}/$( systemd-escape --path --suffix="automount" "${mount_point}" )"
+        cat <<EOCAT >"${automount_unit_file_path}"
+[Unit]
+Description=${medium_name} Encrypted Storage Automount
+
+[Automount]
+Where=${mount_point}
+TimeoutIdleSec=5
+
+[Install]
+WantedBy=encrypted-storage.target
+EOCAT
+        ln -s "${automount_unit_file_path}" "${normal_folder_path}/encrypted-storage.target.wants"
+
+        declare mount_unit_file_path
+        mount_unit_file_path="${normal_folder_path}/$( systemd-escape --path --suffix="mount" "${mount_point}" )"
+        cat <<EOCAT >"${mount_unit_file_path}"
+[Unit]
+Description=${medium_name} Encrypted Storage Mount
+
+[Mount]
+What=${medium_name}
+Where=${mount_point}
+Type=encrypted-storage
+
+[Install]
+WantedBy=encrypted-storage.target
+EOCAT
+        ln -s "${mount_unit_file_path}" "${normal_folder_path}/encrypted-storage.target.wants"
+
+    done
+}
+
+main "${@}"

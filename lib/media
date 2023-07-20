@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+
+list_medium_names()
+{
+    find "$( config_folder_path )" \
+        -name "*.medium" -exec basename "{}" ".medium" \;
+}
+
+
+mount_medium()
+{
+    declare medium_name
+    medium_name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    declare key_file_path
+    key_file_path="${3}"
+
+    declare mount_helper_name
+    mount_helper_name="${4}"
+
+
+    declare intermediary_mount_point
+    intermediary_mount_point="$( intermediary_mount_point "${medium_name}" )"
+
+    mkdir -p "${intermediary_mount_point}" "${mount_point}"
+    
+    setup_medium "${medium_name}" "${intermediary_mount_point}" "${key_file_path}"
+
+    mount \
+        --bind \
+        -o "x-encrypted-storage-medium-name=${medium_name}$( if [[ ! -z "${mount_helper_name}" ]]; then echo ",helper=${mount_helper_name}"; fi )" \
+            "${intermediary_mount_point}" "${mount_point}"
+}
+
+
+unmount_medium()
+{
+    declare medium_name
+    medium_name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    declare intermediary_mount_point
+    intermediary_mount_point="$( intermediary_mount_point "${medium_name}" )"
+
+    umount \
+        --internal-only \
+            "${mount_point}"
+
+    teardown_medium "${medium_name}" "${intermediary_mount_point}"
+
+    rmdir "${intermediary_mount_point}"
+}
+
+
+intermediary_mount_point()
+{
+    declare medium_name
+    medium_name="${1}"
+    
+    echo "$( runtime_folder_path )/mount_points/${medium_name}"
+}
+
+
+config_folder_path()
+{
+    echo "${CONFIG_FOLDER_PATH:-"/etc/${APPLICATION_NAME}"}"
+}
+
+
+runtime_folder_path()
+{
+    echo "${RUNTIME_FOLDER_PATH:-"/run/${APPLICATION_NAME}"}"
+}
+
+
+setup_medium()
+{
+    declare name
+    name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    declare key_file_path
+    key_file_path="${3}"
+
+    (
+        source "$( config_folder_path )/${name}.medium"
+        NAME="${name}" MOUNT_POINT="${mount_point}" KEY_FILE_PATH="${key_file_path}" setup
+    )
+}
+
+teardown_medium()
+{
+    declare name
+    name="${1}"
+
+    declare mount_point
+    mount_point="${2}"
+
+    (
+        source "$( config_folder_path )/${name}.medium"
+        NAME="${name}" MOUNT_POINT="${mount_point}" teardown
+    )
+}
+
+
+# mount_medium()
+# {
+#     declare -a args
+#     args=()
+
+#     declare helper
+#     helper=""
+
+#     while true; do
+#         case "${1:-}" in
+#             --helper | -h )
+#                     helper="${2}"
+#                     shift 2
+#                 ;;
+
+#             --helper=* )
+#                     helper="${1#"--helper="}"
+#                     shift 1
+#                 ;;
+#             '' )
+#                     break
+#                 ;;
+
+#             * )
+#                 args+=("${1}")
+#                 shift 1
+#                 ;;
+#         esac
+#     done
+
+#     set -- "${args[@]}"
+
+#     declare medium
+#     medium="${1}"
+    
+#     declare default_mount_point
+#     default_mount_point=$(
+#         source "$( medium_file_path "${medium}" )"
+#         echo ${MOUNT_POINT}
+#     )
+
+#     declare mount_point
+#     mount_point="${2:-"${default_mount_point}"}"
+
+#     mkdir -p "${mount_point}"
+
+#     (
+#         source "$( medium_file_path "${medium}" )"
+#         mount_callback "${mount_point}" "x-sensitive-storage-medium=${medium}" "${helper}"
+#     )
+# }
+
+
+# unmount_medium()
+# {
+#     declare -a args
+#     args=()
+
+#     declare internal_only
+#     internal_only=false
+
+#     while true; do
+#         case "${1:-}" in
+#             --internal-only | -i )
+#                     internal_only=true
+#                     shift 1
+#                 ;;
+
+#             '' )
+#                     break
+#                 ;;
+
+#             * )
+#                 args+=("${1}")
+#                 shift 1
+#                 ;;
+#         esac
+#     done
+
+#     set -- "${args[@]}"
+
+#     declare mount_point
+#     declare medium
+#     if mountpoint -q "${1}"; then
+#         mount_point="${1}"
+#         medium=$( 
+#             mount -v | \
+#             jc --mount | \
+#             jq \
+#                 -r \
+#                 --arg mount_point "${mount_point}" \
+#                     '.[] | select(.mount_point | contains($mount_point)) | .options[] | select(. | contains("x-sensitive-storage-medium="))' | \
+#             awk -F "=" '{ print($2) }'
+#         )
+#     else
+#         medium="${1}"
+#         mount_point=$( 
+#             mount -v | \
+#             jc --mount | \
+#             jq \
+#                 -r \
+#                 --arg medium "${medium}" \
+#                     '.[] | select(.options[] | contains("x-sensitive-storage-medium=" + $medium)) | .mount_point'
+#         )
+#     fi
+
+#     (
+#         source "$( medium_file_path "${medium}" )"
+#         unmount_callback "${mount_point}" ${internal_only}
+#     )
+# }
+
+
+# die()
+# {
+#     echo "${*}" >&2
+#     exit 1
+# }
+
+
+# medium_mount_point()
+# {
+#     declare medium
+#     medium="${1}"
+#     (
+#         source "$( medium_file_path "${medium}" )"
+#         echo ${MOUNT_POINT}
+#     )
+# }
+
+
+# medium_file_path()
+# {
+#     declare medium
+#     medium="${1}"
+#     shift 1
+#     echo "$( medium_folder_path )/${medium}.medium"
+# }
+
+
+# medium_folder_path()
+# {
+#     # echo "$( dirname "${SCRIPT_FILE_PATH}" )/sensitive-storages"
+#     echo "/etc/sensitive-storages"
+# }

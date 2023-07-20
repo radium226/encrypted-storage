@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+set -euEo pipefail
+
+declare APPLICATION_NAME
+APPLICATION_NAME="$( basename "$( dirname "$( realpath "${0}" )" )" )"
+
+declare LOG_CONTEXT
+LOG_CONTEXT="$( basename "${0}" )"
+
+declare file_name
+for file_name in "logging"; do
+    source "$( dirname "$( realpath "${0}" )" )/../lib/${file_name}"
+done
+
+
+trap 'echo "Something went wrong! Quitting... " >&2' ERR
+
+main()
+{
+    
+    echo "${PATH}" >&2
+
+
+    declare -a arguments
+    arguments=()
+
+    declare sloppy
+    sloppy=false
+
+    declare fake
+    fake=false
+
+    declare mtab
+    mtab=true
+
+    declare verbose
+    verbose=true
+
+    declare -a options
+    options=()
+
+    declare sub_type
+    sub_type=""
+
+    # spec dir [-sfnv] [-o options] [-t type.subtype] 
+    while true; do
+        case "${1:-}" in
+            -s )
+                    sloppy=true
+                    shift 1
+                ;;
+
+            -f )
+                    fake=true
+                    shift 1
+                ;;
+
+            -n )
+                    mtab=true
+                    shift 1
+                ;;
+
+            -v )
+                    verbose=true
+                    shift 1
+                ;;
+
+            -o )
+                    options+=("${2}")
+                    shift 2
+                ;;
+
+            -t )
+                    sub_type="${2}"
+                    shift 2
+                ;;
+
+            '' )
+                    break
+                ;;
+
+            * )
+                    arguments+=("${1}")
+                    shift 1
+                ;;
+        esac
+    done
+
+    declare medium_name
+    medium_name="${arguments[0]}"
+
+    declare mount_point
+    mount_point="${arguments[1]}"
+
+    encrypted-storage mount-medium --name="${medium_name}" --mount-helper="encrypted-storage" "${mount_point}"
+}
+
+main "${@}"

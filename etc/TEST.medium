@@ -1,0 +1,15 @@
+setup()
+{
+    log_info "Setting up ${NAME}... "
+    log_info "KEY_FILE_PATH=${KEY_FILE_PATH}"
+    log_info "Using '$( cat "${KEY_FILE_PATH}" )' as key! "
+
+    mount --bind "./test/storage" "${MOUNT_POINT}"
+}
+
+teardown()
+{
+    log_info "Tearing down ${NAME}... "
+
+    umount "${MOUNT_POINT}"
+}
