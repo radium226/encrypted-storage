@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+set -euEo pipefail
+
+
+declare SCRIPT_FILE_PATH
+SCRIPT_FILE_PATH="${0}"
+export SCRIPT_FILE_PATH
+
+
+main()
+{
+    if [[ -z "${INVOCATION_ID:-""}" ]]; then
+        systemd-run \
+            --quiet \
+            --wait \
+            --same-dir \
+            --pty \
+            --collect \
+            --property="LoadCredentialEncrypted=key.txt:$( pwd )/key.txt" \
+                -- \
+                    "${SCRIPT_FILE_PATH}" "${@}"
+    else
+        cat ${CREDENTIALS_DIRECTORY}/key.txt
+    fi
+}
+
+main "${@}"
