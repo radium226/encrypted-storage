@@ -68,13 +68,21 @@ intermediary_mount_point()
 
 config_folder_path()
 {
-    echo "${ENCRYPTED_STORAGE_CONFIG_FOLDER_PATH:-"/etc/encrypted-storage"}"
+    declare folder_path
+    folder_path="${ENCRYPTED_STORAGE_CONFIG_FOLDER_PATH:-"/etc/encrypted-storage"}"
+    
+    mkdir -p "${folder_path}"
+    echo "${folder_path}"
 }
 
 
 runtime_folder_path()
 {
-    echo "${ENCRYPTED_STORAGE_RUNTIME_FOLDER_PATH:-"/run/encrypted-storage"}"
+    declare folder_path
+    folder_path="${ENCRYPTED_STORAGE_RUNTIME_FOLDER_PATH:-"/run/encrypted-storage"}"
+
+    mkdir -p "${folder_path}"
+    echo "${folder_path}"
 }
 
 
