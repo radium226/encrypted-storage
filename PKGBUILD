@@ -3,11 +3,6 @@ pkgver="${PKGVER:-"0.0.1"}"
 pkgrel="${PKGREL:-"1"}"
 arch=('any')
 
-prepare()
-{
-  :
-}
-
 depends=(
   "jc"
   "jq"
