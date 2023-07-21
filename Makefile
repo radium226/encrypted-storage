@@ -7,29 +7,29 @@ SHELL := bash
 SRCDIR := ./src
 BUILDDIR := ./build
 DESTDIR := /usr/local
+DISTDIR := ./dist
+PREFIX := $(DESTDIR)
+
+VERSION := 0.0.1
+RELEASE := 1
 
 
-SOURCE_FOLDER := $(SRCDIR)
-BUILD_FOLDER := $(BUILDDIR)
-INSTALL_FOLDER := $(DESTDIR)
-
-
-SOURCE_FILES := $(shell find "$(SOURCE_FOLDER)/scripts" "$(SOURCE_FOLDER)/functions" "$(SOURCE_FOLDER)/systemd-units" -type "f")
-BUILD_FILES := $(SOURCE_FILES:$(SOURCE_FOLDER)/%=$(BUILD_FOLDER)/%)
+SOURCE_FILES := $(shell find "$(SRCDIR)/scripts" "$(SRCDIR)/functions" "$(SRCDIR)/systemd-units" -type "f")
+BUILD_FILES := $(SOURCE_FILES:$(SRCDIR)/%=$(BUILDDIR)/%)
 
 
 build: $(BUILD_FILES)
 
 
-$(BUILD_FOLDER)/scripts/%: $(SOURCE_FOLDER)/scripts/%
-	mkdir -p "$(BUILD_FOLDER)/scripts"
+$(BUILDDIR)/scripts/%: $(SRCDIR)/scripts/%
+	mkdir -p "$(BUILDDIR)/scripts"
 	sed \
 		-r\
-		-e "s,%\{INSTALL_FOLDER\},$(INSTALL_FOLDER),g" \
+		-e "s,%\{PREFIX\},$(PREFIX),g" \
 		"$<" >"$@"
 
 
-$(BUILD_FOLDER)/%: $(SOURCE_FOLDER)/%
+$(BUILDDIR)/%: $(SRCDIR)/%
 	mkdir -p "$(shell dirname "$@" )"
 	cp "$<" "$@"
 
@@ -37,44 +37,44 @@ $(BUILD_FOLDER)/%: $(SOURCE_FOLDER)/%
 .PHONY: install
 install:
 	# Install functions
-	find "$(BUILD_FOLDER)/functions" -type "f" -exec install \
+	find "$(BUILDDIR)/functions" -type "f" -exec install \
 		-D \
 		-m "u=rw,g=r,o=" \
-		-t "$(INSTALL_FOLDER)/lib/encrypted-storage/functions" \
+		-t "$(DESTDIR)/lib/encrypted-storage/functions" \
 			"{}" \;
 
 	# Install binaries
 	install \
 		-D \
 		-m "u=rwx,g=rx,o=x" \
-		-t "$(INSTALL_FOLDER)/bin" \
-			"$(BUILD_FOLDER)/scripts/encrypted-storage" \
-			"$(BUILD_FOLDER)/scripts/mount.encrypted-storage" \
-			"$(BUILD_FOLDER)/scripts/umount.encrypted-storage"
+		-t "$(DESTDIR)/bin" \
+			"$(BUILDDIR)/scripts/encrypted-storage" \
+			"$(BUILDDIR)/scripts/mount.encrypted-storage" \
+			"$(BUILDDIR)/scripts/umount.encrypted-storage"
 
 	# Install systemd generator
 	install \
 		-D \
 		-m "u=rwx,g=rx,o=x" \
-		-t "$(INSTALL_FOLDER)/lib/systemd/system-generators" \
-			"$(BUILD_FOLDER)/scripts/systemd-encrypted-storage-generator"
+		-t "$(DESTDIR)/lib/systemd/system-generators" \
+			"$(BUILDDIR)/scripts/systemd-encrypted-storage-generator"
 
 	# Install systemd units
 	install \
 		-D \
 		-m "u=rw,g=r,o=" \
-		-t "$(INSTALL_FOLDER)/lib/systemd/system" \
-			"$(BUILD_FOLDER)/systemd-units/encrypted-storage.target"
+		-t "$(DESTDIR)/lib/systemd/system" \
+			"$(BUILDDIR)/systemd-units/encrypted-storage.target"
 
 
 .PHONY: uninstall
 uninstall:
-	rm "$(INSTALL_FOLDER)/lib/systemd/system/encrypted-storage.target"
-	rm "$(INSTALL_FOLDER)/lib/systemd/system-generators/systemd-encrypted-storage-generator"
-	rm "$(INSTALL_FOLDER)/bin/umount.encrypted-storage"
-	rm "$(INSTALL_FOLDER)/bin/mount.encrypted-storage"
-	rm "$(INSTALL_FOLDER)/bin/encrypted-storage"
-	rm -Rf "$(INSTALL_FOLDER)/lib/encrypted-storage"
+	rm "$(DESTDIR)/lib/systemd/system/encrypted-storage.target"
+	rm "$(DESTDIR)/lib/systemd/system-generators/systemd-encrypted-storage-generator"
+	rm "$(DESTDIR)/bin/umount.encrypted-storage"
+	rm "$(DESTDIR)/bin/mount.encrypted-storage"
+	rm "$(DESTDIR)/bin/encrypted-storage"
+	rm -Rf "$(DESTDIR)/lib/encrypted-storage"
 
 
 .PHONY: enable
@@ -85,8 +85,26 @@ enable:
 
 .PHONY: clean
 clean:
-	trash "$(BUILD_FOLDER)"
+	trash "$(BUILDDIR)"
+	trash "encrypted-storage-$(VERSION).tar.gz"
 
+$(DISTDIR)/encrypted-storage-$(VERSION).tar.gz:
+	mkdir -p "$(DISTDIR)"
+	tar -cf "$(DISTDIR)/encrypted-storage-$(VERSION).tar.gz" "Makefile" "src"
+
+$(DISTDIR)/PKGBUILD: PKGBUILD
+	cp "PKGBUILD" "$(DISTDIR)/PKGBUILD"
+
+.PHONY: package
+package: $(DISTDIR)/encrypted-storage-$(VERSION).tar.gz $(DISTDIR)/PKGBUILD
+	cd "$(DISTDIR)"
+
+	PKGVER="$(VERSION)" \
+	PKGREL="$(RELEASE)" \
+		makepkg \
+			--force \
+			--skipchecksums \
+			--nodeps
 
 # .PHONY: test
 # test:

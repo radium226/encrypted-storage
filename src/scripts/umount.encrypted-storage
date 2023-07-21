@@ -14,7 +14,7 @@ export SCRIPT_FILE_NAME
 
 declare file_name
 for file_name in "logging" "exit-codes" "media"; do
-    source "%{INSTALL_FOLDER}/lib/encrypted-storage/functions/${file_name}"
+    source "%{PREFIX}/lib/encrypted-storage/functions/${file_name}"
 done
 
 
