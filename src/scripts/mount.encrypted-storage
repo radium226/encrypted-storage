@@ -92,8 +92,11 @@ main()
     declare mount_point
     mount_point="${arguments[1]}"
 
+    echo "[mount.encrypted-storage] We are here! " >&2
+    env >&2
+
     # We reset the INVOCATION_ID in order to force the systemd-run inside... 
-    INVOCATION_ID= encrypted-storage mount-medium --name="${medium_name}" --mount-helper="encrypted-storage" "${mount_point}"
+    env -u JOURNAL_STREAM -u SYSTEMD_EXEC_PID -u INVOCATION_ID /usr/local/bin/encrypted-storage mount-medium --name="${medium_name}" --mount-helper="encrypted-storage" "${mount_point}"
 }
 
 main "${@}"

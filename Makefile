@@ -80,7 +80,7 @@ uninstall:
 .PHONY: enable
 enable:
 	systemctl daemon-reload
-	systemctl enable "encrypted-storage.target"
+	systemctl enable --now "encrypted-storage.target"
 
 
 .PHONY: clean

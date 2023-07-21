@@ -25,14 +25,17 @@ mount_medium()
     declare intermediary_mount_point
     intermediary_mount_point="$( intermediary_mount_point "${medium_name}" )"
 
-    mkdir -p "${intermediary_mount_point}" "${mount_point}"
+    mkdir -p "${intermediary_mount_point}"
     
     setup_medium "${medium_name}" "${intermediary_mount_point}" "${key_file_path}"
 
+    echo "Creating bind mount..." >&2
     mount \
+        -vvv \
         --bind \
         -o "x-encrypted-storage-medium-name=${medium_name}$( if [[ ! -z "${mount_helper_name}" ]]; then echo ",helper=${mount_helper_name}"; fi )" \
             "${intermediary_mount_point}" "${mount_point}"
+    echo "Done! " >&2
 }
 
 
@@ -100,6 +103,7 @@ setup_medium()
     (
         source "$( config_folder_path )/${name}.medium"
         NAME="${name}" MOUNT_POINT="${mount_point}" KEY_FILE_PATH="${key_file_path}" setup
+        echo "We are here! ">&2
     )
 }
 
